@@ -6,15 +6,34 @@ import User from "../models/User.js";
 export const clerkWebhooks = async (req, res) => {
   try {
     const payload = req.body; // raw body buffer
-    const svix_id = req.headers["svix-id"];
-    const svix_timestamp = req.headers["svix-timestamp"];
-    const svix_signature = req.headers["svix-signature"];
+    
+    // Debug: Log all headers to see what's available
+    console.log("All headers:", req.headers);
+    
+    // Try different header case variations that Clerk might send
+    const svix_id = req.headers["svix-id"] || req.headers["Svix-Id"] || req.headers["SVIX-ID"];
+    const svix_timestamp = req.headers["svix-timestamp"] || req.headers["Svix-Timestamp"] || req.headers["SVIX-TIMESTAMP"];
+    const svix_signature = req.headers["svix-signature"] || req.headers["Svix-Signature"] || req.headers["SVIX-SIGNATURE"];
+
+    // Check if required headers are present
+    if (!svix_id || !svix_timestamp || !svix_signature) {
+      console.error("Missing webhook headers:", {
+        svix_id: !!svix_id,
+        svix_timestamp: !!svix_timestamp,
+        svix_signature: !!svix_signature
+      });
+      return res.status(400).json({ error: "Missing required webhook headers" });
+    }
 
     // Create a svix webhook instance with clerk webhook secret
     const whook = new Webhook(process.env.CLERK_WEBHOOK_SECRET);
 
     try {
-      await whook.verify(payload, svix_id, svix_timestamp, svix_signature);
+      await whook.verify(payload, {
+        "svix-id": svix_id,
+        "svix-timestamp": svix_timestamp,
+        "svix-signature": svix_signature,
+      });
       console.log("Webhook verification successful");
     } catch (verifyError) {
       console.error("Webhook verification failed:", verifyError);

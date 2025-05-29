@@ -12,8 +12,13 @@ const app = express();
 
 await connectDB();
 
-// Middleware
+// CORS middleware first
 app.use(cors());
+
+// Webhook route BEFORE express.json() to ensure raw body processing
+app.post('/webhooks', bodyParser.raw({ type: 'application/json' }), clerkWebhooks);
+
+// Regular JSON middleware for other routes
 app.use(express.json());
 
 // Routes
@@ -24,9 +29,6 @@ app.get('/', (req, res) => {
 app.get("/debug-sentry", function mainHandler(req, res) {
   throw new Error("My first Sentry error!");
 });
-
-// Webhook route using raw body for verification
-app.post('/webhooks', bodyParser.raw({ type: 'application/json' }), clerkWebhooks);
 
 const PORT = process.env.PORT || 5000;
 
