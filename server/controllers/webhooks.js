@@ -7,13 +7,10 @@ export const clerkWebhooks = async (req, res) => {
   try {
     const payload = req.body; // raw body buffer
     
-    // Debug: Log all headers to see what's available
-    console.log("All headers:", req.headers);
-    
-    // Try different header case variations that Clerk might send
-    const svix_id = req.headers["svix-id"] || req.headers["Svix-Id"] || req.headers["SVIX-ID"];
-    const svix_timestamp = req.headers["svix-timestamp"] || req.headers["Svix-Timestamp"] || req.headers["SVIX-TIMESTAMP"];
-    const svix_signature = req.headers["svix-signature"] || req.headers["Svix-Signature"] || req.headers["SVIX-SIGNATURE"];
+    // Extract Svix headers (they're in lowercase as shown in the logs)
+    const svix_id = req.headers["svix-id"];
+    const svix_timestamp = req.headers["svix-timestamp"];
+    const svix_signature = req.headers["svix-signature"];
 
     // Check if required headers are present
     if (!svix_id || !svix_timestamp || !svix_signature) {
@@ -29,11 +26,8 @@ export const clerkWebhooks = async (req, res) => {
     const whook = new Webhook(process.env.CLERK_WEBHOOK_SECRET);
 
     try {
-      await whook.verify(payload, {
-        "svix-id": svix_id,
-        "svix-timestamp": svix_timestamp,
-        "svix-signature": svix_signature,
-      });
+      // Pass headers as separate parameters (the correct Svix way)
+      await whook.verify(payload, svix_id, svix_timestamp, svix_signature);
       console.log("Webhook verification successful");
     } catch (verifyError) {
       console.error("Webhook verification failed:", verifyError);
