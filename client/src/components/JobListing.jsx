@@ -10,7 +10,8 @@ const JobListing = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [selectedLocations, setSelectedLocations] = useState([]);
-  const [filteredJobs, setFilteredJobs] = useState(jobs || []);
+  const [filteredJobs, setFilteredJobs] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const handleCategoryChange = (category) => {
     setSelectedCategories((prev) => {
@@ -21,7 +22,7 @@ const JobListing = () => {
       }
     });
   };
-
+                 
   const handleLocationChange = (location) => {
     setSelectedLocations((prev) => {
       if (prev.includes(location)) {
@@ -33,6 +34,14 @@ const JobListing = () => {
   };
 
   useEffect(() => {
+    // Set loading to true when jobs are being processed
+    if (!jobs || jobs.length === 0) {
+      setIsLoading(true);
+      return;
+    }
+
+    setIsLoading(false);
+
     const matchesCategory = (job) =>
       selectedCategories.length === 0 || selectedCategories.includes(job.category);
 
@@ -59,6 +68,31 @@ const JobListing = () => {
     setFilteredJobs(newFilteredJobs);
     setCurrentPage(1);
   }, [jobs, searchFilter, selectedCategories, selectedLocations]);
+
+  // Loading Spinner Component
+  const LoadingSpinner = () => (
+    <div className="flex flex-col items-center justify-center py-16">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      <p className="mt-4 text-gray-600">Loading job postings...</p>
+    </div>
+  );
+
+  // Skeleton Card Component for better UX
+  const SkeletonCard = () => (
+    <div className="bg-white border border-gray-200 rounded-lg p-6 animate-pulse">
+      <div className="h-4 bg-gray-300 rounded w-3/4 mb-4"></div>
+      <div className="h-3 bg-gray-300 rounded w-1/2 mb-2"></div>
+      <div className="h-3 bg-gray-300 rounded w-1/3 mb-4"></div>
+      <div className="space-y-2">
+        <div className="h-2 bg-gray-300 rounded"></div>
+        <div className="h-2 bg-gray-300 rounded w-5/6"></div>
+      </div>
+      <div className="flex justify-between items-center mt-4">
+        <div className="h-3 bg-gray-300 rounded w-1/4"></div>
+        <div className="h-8 bg-gray-300 rounded w-20"></div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="container 2xl:px-20 mx-auto flex flex-col lg:flex-row max-lg:space-y-8 py-8">
@@ -149,50 +183,75 @@ const JobListing = () => {
           Latest Jobs
         </h3>
         <p className="mb-8">Get your desired job from top companies</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filteredJobs
-            .slice((currentPage - 1) * 6, currentPage * 6)
-            .map((job, index) => (
-              <JobCard key={index} job={job} />
-            ))}
-        </div>
+        
+        {/* Show loading state */}
+        {isLoading ? (
+          <>
+            {/* Option 1: Simple spinner (uncomment to use) */}
+            {/* <LoadingSpinner /> */}
+            
+            {/* Option 2: Skeleton cards (better UX) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <SkeletonCard key={index} />
+              ))}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filteredJobs
+                .slice((currentPage - 1) * 6, currentPage * 6)
+                .map((job, index) => (
+                  <JobCard key={index} job={job} />
+                ))}
+            </div>
 
-        {/* pagination */}
-        {filteredJobs.length > 0 && (
-          <div className="flex justify-center items-center space-x-2 mt-10">
-            <a href="#job-list">
-              <img
-                onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
-                src={assets.left_arrow_icon}
-                alt=""
-              />
-            </a>
-            {Array.from({ length: Math.ceil(filteredJobs.length / 6) }).map((_, index) => (
-              <a href="#job-list" key={index}>
-                <button
-                  onClick={() => setCurrentPage(index + 1)}
-                  className={`cursor-pointer w-10 h-10 flex items-center justify-center border border-gray-300 rounded ${
-                    currentPage === index + 1
-                      ? "bg-blue-100 text-blue-500"
-                      : "text-gray-500"
-                  }`}
-                >
-                  {index + 1}
-                </button>
-              </a>
-            ))}
-            <a href="#job-list">
-              <img
-                onClick={() =>
-                  setCurrentPage(
-                    Math.min(currentPage + 1, Math.ceil(filteredJobs.length / 6))
-                  )
-                }
-                src={assets.right_arrow_icon}
-                alt=""
-              />
-            </a>
-          </div>
+            {/* pagination */}
+            {filteredJobs.length > 0 && (
+              <div className="flex justify-center items-center space-x-2 mt-10">
+                <a href="#job-list">
+                  <img
+                    onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
+                    src={assets.left_arrow_icon}
+                    alt=""
+                  />
+                </a>
+                {Array.from({ length: Math.ceil(filteredJobs.length / 6) }).map((_, index) => (
+                  <a href="#job-list" key={index}>
+                    <button
+                      onClick={() => setCurrentPage(index + 1)}
+                      className={`cursor-pointer w-10 h-10 flex items-center justify-center border border-gray-300 rounded ${
+                        currentPage === index + 1
+                          ? "bg-blue-100 text-blue-500"
+                          : "text-gray-500"
+                      }`}
+                    >
+                      {index + 1}
+                    </button>
+                  </a>
+                ))}
+                <a href="#job-list">
+                  <img
+                    onClick={() =>
+                      setCurrentPage(
+                        Math.min(currentPage + 1, Math.ceil(filteredJobs.length / 6))
+                      )
+                    }
+                    src={assets.right_arrow_icon}
+                    alt=""
+                  />
+                </a>
+              </div>
+            )}
+
+            {/* No jobs found message */}
+            {filteredJobs.length === 0 && !isLoading && (
+              <div className="text-center py-16">
+                <p className="text-gray-600 text-lg">No job postings found matching your criteria.</p>
+              </div>
+            )}
+          </>
         )}
       </section>
     </div>
